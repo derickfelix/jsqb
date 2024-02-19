@@ -2,6 +2,7 @@ SQL Query Builder
 =================
 
 Stop to lost time writing repeated SQL queries and let Java SQL Query Builder do the job for you. It's simple, fast and lightweight. **You don't need to make a connection with a database.** 
+This project could be implement in any kind of Java Project since there's any dependency.
 
 <a name="index_block"></a>
 
@@ -21,12 +22,13 @@ Stop to lost time writing repeated SQL queries and let Java SQL Query Builder do
 For default installation, see [Releases](https://github.com/derickfelix/jsqb/releases) section to download the .jar file and add it to the path of your project.
 <a name="block1.1"></a>
 ### 1.1. Installation with Maven [↑](#index_block)
-To install with maven, you can use the [Jitpack](https://jitpack.io/) for that.
+To install with maven
+
+[![](https://jitpack.io/v/STR4NG3R/querybuilder4j.svg)](https://jitpack.io/#STR4NG3R/querybuilder4j)
 
 Step 1. Add the JitPack repository to your build file
 ```xml
 <repositories>
-    ...
     <repository>
         <id>jitpack.io</id>
         <url>https://jitpack.io</url>
@@ -35,17 +37,12 @@ Step 1. Add the JitPack repository to your build file
 ```
 Step 2. Add the dependency
 ```xml
-<dependencies>
-    ...
-    <dependency>
-        <groupId>com.github.derickfelix</groupId>
-        <artifactId>jsqb</artifactId>
-        <version>LATEST</version>
-    </dependency>
-</dependencies>
+<dependency>
+    <groupId>com.github.STR4NG3R</groupId>
+    <artifactId>querybuilder4j</artifactId>
+    <version>1.0.2</version>
+</dependency>
 ```
-If the project doesn't have any GitHub Releases you can use the short commit hash or 'master-SNAPSHOT' as the version. Check the [Jitpack](https://jitpack.io/) page for more details. 
-
 
 
 <a name="block2"></a>
@@ -58,8 +55,8 @@ If the project doesn't have any GitHub Releases you can use the short commit has
 public class Usage {
     public static void main(String[] args)
     {
-        Jsqb jsqb = new Jsqb();
-        String sql = jsqb.select("users").write();
+        Selector selector = new Selector();
+        String sql = selector.select("users").write();
     
         System.out.println(sql);
     }
@@ -77,8 +74,10 @@ SELECT users.* FROM users
 public class Usage {
     public static void main(String[] args)
     {
-        Jsqb jsqb = new Jsqb();
-        String sql = jsqb.select("users", "id", "name", "email").write();
+        Selector selector = new Selector();
+        String sql = selector.select("users", "id")
+        addSelect("name", "email")
+        .write();
     
         System.out.println(sql);
     }
@@ -90,16 +89,23 @@ SELECT users.id, users.name, users.email FROM users
 ```
 
 <a name="block2.3"></a>
-### 2.2. Aliased SELECT statement [↑](#index_block) 
-The same of the previous one but with more information.
+### 2.2. SELECT with where statement [↑](#index_block) 
+Add a filter criteria to select statement
 
 #### Usage:
 ```java
 public class Usage {
     public static void main(String[] args)
     {
-        Jsqb jsqb = new Jsqb();
-        String sql = jsqb.select("users", "id as userId", "name as username", "email as receiver").write();
+        String username = "a";
+        String email = "anemail@example.com";
+
+        Selector jsqb = new Selector();
+        String sql = jsqb
+        .select("users", "id as userId", "name as username", "email as receiver")
+        .where("username LIKE \"%:username\"", selector.addParameter("username", username))
+        .andWhere("email = :email", selector.addParameter("email", email, true))
+        .write();
     
         System.out.println(sql);
     }
@@ -108,6 +114,7 @@ public class Usage {
 #### Output:
 ```sql
 SELECT users.id as userId, users.name as username, users.email as receiver FROM users
+WHERE usename LIKE "%?" AND email "?"
 ```
 
 <a name="block3"></a>
@@ -115,18 +122,21 @@ SELECT users.id as userId, users.name as username, users.email as receiver FROM 
 
 <a name="block3.1"></a>
 ### 3.1. Simple Inner join [↑](#index_block)
-The `innerJoin()` method expects the `tableName`, and the `on` detail, and the `fields` parameter is optional.
+The `join()` method expects an enum of possible type of JOIN
 This method is described as:
-`innerJoin(String tableName, String on, String... fields)`.
+`innerJoin(JOIN join,String table, String on)`.
 
 #### Usage:
 ```java
 public class Usage {
     public static void main(String[] args)
     {
-        Jsqb jsqb = new Jsqb();
-        String sql = jsqb.select("users", "id", "name", "email")
-                             .innerJoin("roles", "roles.id = users.role_id", "name", "level")
+        Selector selector = new Selector();
+        String sql = selector.select("users as u", "id", "name", "email")
+                             .join(JOIN.INNER, "roles as r", "r.id = u.role_id")
+                             .addSelect("r.name", "r.id", "r.level")
+                             .join(JOIN.RIGHT, "address as a", "a.user_id = u.id")
+                             .addSelect("a.street", "a.cp", "a.number")
                              .write();
     
         System.out.println(sql);
@@ -135,34 +145,45 @@ public class Usage {
 ```
 #### Output:
 ```sql
-SELECT users.id, users.name, users.email, roles.name, roles.level FROM users 
-INNER JOIN roles on roles.id = users.role_id
+SELECT u.id, u.name, u.email, r.name, r.level, a.street, a.cp, a.number FROM users 
+INNER JOIN roles r ON r.id = u.role_id
+RIGHT JOIN address ON a a.user_id = u.id
 ```
 
 <a name="block4"></a>
-## 4. Author [↑](#index_block)
+## 4. Authors [↑](#index_block)
 Derick Felix
+
 
  - <derickfelix@zoho.com>
  - [https://github.com/derickfelix](https://github.com/derickfelix)
 
+Pablo Eduardo Martinez Solis
+
+
+ - <pablo980629@hotmail.com>
+ - [https://github.com/STR4NG3R](https://github.com/STR4NG3R)
+
 
 <a name="block5"></a>
 ## 5. License [↑](#index_block)
-Java SQL Query Builder is licensed under the Apache license.
+Java SQL Query Builder is licensed under the GPLv3 license.
 
 ```
-Copyright 2018 derickfelix.
+The GPLv3 License (GPLv3)
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
- 
-     http://www.apache.org/licenses/LICENSE-2.0
- 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright (c) 2023 Pablo Eduardo Martinez Solis, Derick Felix
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ```
